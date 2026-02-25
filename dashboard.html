@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BOSS — System Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #07090f;
+            --sidebar: #0b0e18;
+            --surface: #0f1219;
+            --surface2: #131722;
+            --border: #1a2030;
+            --border2: #1f2840;
+            --accent: #3b82f6;
+            --accent-d: #1d4ed8;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --purple: #8b5cf6;
+            --text: #e2e8f0;
+            --sub: #94a3b8;
+            --muted: #475569;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+        }
+
+        /* ─── SIDEBAR ───────────────────────────────────────────── */
+        .sidebar {
+            width: 220px;
+            flex-shrink: 0;
+            background: var(--sidebar);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .sb-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 1.25rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sb-logo .ico {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 0.75rem;
+            color: #fff;
+        }
+
+        .sb-logo .brand {
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: -0.01em;
+        }
+
+        .sb-logo .brand small {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--muted);
+            font-weight: 400;
+            letter-spacing: 0;
+        }
+
+        .sb-section {
+            padding: 1rem 0.75rem 0.5rem;
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+        }
+
+        .sb-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0.55rem 1rem;
+            margin: 1px 0.5rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--sub);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-decoration: none;
+        }
+
+        .sb-item:hover {
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        .sb-item.active {
+            background: #3b82f615;
+            color: #93c5fd;
+        }
+
+        .sb-item .icon {
+            font-size: 0.9rem;
+            width: 18px;
+            text-align: center;
+        }
+
+        .sb-bottom {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .sb-version-pill {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 8px 10px;
+        }
+
+        .svp-label {
+            font-size: 0.62rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .svp-ver {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            color: var(--green);
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 5px;
+            height: 5px;
+            background: var(--green);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1
+            }
+
+            50% {
+                opacity: 0.3
+            }
+        }
+
+        /* ─── MAIN AREA ─────────────────────────────────────────── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ─── TOPBAR ────────────────────────────────────────────── */
+        .topbar {
+            height: 52px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            flex-shrink: 0;
+            background: var(--bg);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar-left a {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-decoration: none;
+        }
+
+        .topbar-left a:hover {
+            color: var(--sub);
+        }
+
+        .topbar-left .sep {
+            color: var(--border2);
+        }
+
+        .topbar-left .cur {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--sub);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 5px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .last-update {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        /* ─── SCROLLABLE CONTENT ────────────────────────────────── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .content::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px;
+        }
+
+        /* ─── STAT CARDS ROW ────────────────────────────────────── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.1rem 1.25rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .stat-card.highlight {
+            border-color: var(--border2);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+        }
+
+        .stat-card.c1::before {
+            background: linear-gradient(90deg, var(--accent), #7c3aed);
+        }
+
+        .stat-card.c2::before {
+            background: linear-gradient(90deg, var(--green), #14b8a6);
+        }
+
+        .stat-card.c3::before {
+            background: linear-gradient(90deg, var(--amber), var(--red));
+        }
+
+        .stat-card.c4::before {
+            background: linear-gradient(90deg, var(--purple), var(--accent));
+        }
+
+        .sc-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .sc-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1;
+            margin-bottom: 0.4rem;
+            transition: color 0.4s;
+        }
+
+        .sc-sub {
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+
+        .sc-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge-green {
+            background: #22c55e15;
+            color: #86efac;
+            border: 1px solid #22c55e30;
+        }
+
+        .badge-blue {
+            background: #3b82f615;
+            color: #93c5fd;
+            border: 1px solid #3b82f630;
+        }
+
+        .badge-amber {
+            background: #f59e0b15;
+            color: #fcd34d;
+            border: 1px solid #f59e0b30;
+        }
+
+        .badge-red {
+            background: #ef444415;
+            color: #fca5a5;
+            border: 1px solid #ef444430;
+        }
+
+        .badge-gray {
+            background: #47556915;
+            color: #94a3b8;
+            border: 1px solid #47556930;
+        }
+
+        /* ─── TWO-COL LAYOUT ────────────────────────────────────── */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 1.25rem;
+        }
+
+        /* ─── PANEL ─────────────────────────────────────────────── */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .panel-sub {
+            font-size: 0.68rem;
+            color: var(--muted);
+        }
+
+        /* ─── SERVICES TABLE ────────────────────────────────────── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead tr {
+            background: var(--surface2);
+        }
+
+        th {
+            text-align: left;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background: #ffffff03;
+        }
+
+        .tier-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 3px 9px;
+            border-radius: 999px;
+        }
+
+        .tier1 {
+            background: #ef444412;
+            color: #fca5a5;
+            border: 1px solid #ef444430;
+        }
+
+        .tier2 {
+            background: #f59e0b12;
+            color: #fcd34d;
+            border: 1px solid #f59e0b30;
+        }
+
+        .tier3 {
+            background: #47556912;
+            color: #94a3b8;
+            border: 1px solid #47556930;
+        }
+
+        .ver-mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .status-ok {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.72rem;
+            color: var(--green);
+        }
+
+        .status-ok::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            background: var(--green);
+            border-radius: 50%;
+            display: block;
+        }
+
+        /* ─── INFO PANEL (right col) ────────────────────────────── */
+        .info-section {
+            padding: 1.1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .info-section:last-child {
+            border-bottom: none;
+        }
+
+        .info-key {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .info-val {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .info-val.mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .bump-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 5px 12px;
+            border-radius: 8px;
+        }
+
+        .bi-major {
+            background: #ef444415;
+            color: #fca5a5;
+            border: 1px solid #ef444432;
+        }
+
+        .bi-minor {
+            background: #3b82f615;
+            color: #93c5fd;
+            border: 1px solid #3b82f632;
+        }
+
+        .bi-patch {
+            background: #f59e0b15;
+            color: #fcd34d;
+            border: 1px solid #f59e0b32;
+        }
+
+        .bi-none {
+            background: #47556915;
+            color: #94a3b8;
+            border: 1px solid #47556932;
+        }
+
+        /* ─── VERSION HISTORY ───────────────────────────────────── */
+        .timeline {
+            padding: 0.75rem 1.25rem;
+        }
+
+        .tl-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.78rem;
+        }
+
+        .tl-item:last-child {
+            border-bottom: none;
+        }
+
+        .tl-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+            flex-shrink: 0;
+        }
+
+        .tl-dot.green {
+            background: var(--green);
+            box-shadow: 0 0 5px var(--green);
+        }
+
+        .tl-dot.blue {
+            background: var(--accent);
+        }
+
+        .tl-dot.gray {
+            background: var(--muted);
+        }
+
+        .tl-ver {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--text);
+            min-width: 55px;
+        }
+
+        .tl-desc {
+            color: var(--sub);
+            flex: 1;
+            font-size: 0.73rem;
+            line-height: 1.4;
+        }
+
+        .tl-time {
+            color: var(--muted);
+            font-size: 0.68rem;
+            white-space: nowrap;
+        }
+
+        /* ─── LOADING ────────────────────────────────────────────── */
+        .skeleton {
+            background: linear-gradient(90deg, var(--border) 25%, var(--border2) 50%, var(--border) 75%);
+            background-size: 200% 100%;
+            animation: sk 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes sk {
+            to {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ─── DECISION MATRIX TABLE ─────────────────────────────── */
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        }
+
+        .mx-cell {
+            background: var(--surface);
+            padding: 0.65rem 1rem;
+            font-size: 0.72rem;
+        }
+
+        .mx-cell.header {
+            background: var(--surface2);
+            color: var(--muted);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        .mx-cell.mx-major {
+            color: #fca5a5;
+            background: #ef444408;
+        }
+
+        .mx-cell.mx-minor {
+            color: #93c5fd;
+            background: #3b82f608;
+        }
+
+        .mx-cell.mx-patch {
+            color: #fcd34d;
+            background: #f59e0b08;
+        }
+
+        @media (max-width: 1100px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* flash animation for version bump */
+        .flash-green {
+            animation: flashG 0.8s ease;
+        }
+
+        @keyframes flashG {
+
+            0%,
+            100% {
+                color: var(--text);
+            }
+
+            40% {
+                color: var(--green);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ─── SIDEBAR ──────────────────────────────────────────────── -->
+    <aside class="sidebar">
+        <div class="sb-logo">
+            <div class="ico">B</div>
+            <div class="brand">BOSS<small>Enterprise Platform</small></div>
+        </div>
+
+        <div class="sb-section">Platform</div>
+        <a href="index.html" class="sb-item">
+            <span class="icon">⬡</span> Home
+        </a>
+        <a href="dashboard.html" class="sb-item active">
+            <span class="icon">◫</span> Dashboard
+        </a>
+
+        <div class="sb-section">Services</div>
+        <a href="https://github.com/Boss-demo-2/demo-auth-service" target="_blank" class="sb-item">
+            <span class="icon">🔐</span> Auth Service
+        </a>
+        <a href="https://github.com/Boss-demo-2/demo-payment-service" target="_blank" class="sb-item">
+            <span class="icon">💳</span> Payment Service
+        </a>
+        <a href="https://github.com/Boss-demo-2/demo-order-service" target="_blank" class="sb-item">
+            <span class="icon">📦</span> Order Service
+        </a>
+        <a href="https://github.com/Boss-demo-2/demo-notification-service" target="_blank" class="sb-item">
+            <span class="icon">🔔</span> Notification
+        </a>
+        <a href="https://github.com/Boss-demo-2/demo-reporting-service" target="_blank" class="sb-item">
+            <span class="icon">📊</span> Reporting
+        </a>
+
+        <div class="sb-section">Aggregator</div>
+        <a href="https://github.com/Boss-demo-2/boss-aggregator/actions" target="_blank" class="sb-item">
+            <span class="icon">⚡</span> Run Pipeline
+        </a>
+        <a href="https://github.com/Boss-demo-2/boss-aggregator/releases" target="_blank" class="sb-item">
+            <span class="icon">🏷</span> Releases
+        </a>
+
+        <div class="sb-bottom">
+            <div class="sb-version-pill">
+                <div>
+                    <div class="svp-label">BOSS Version</div>
+                    <div class="svp-ver" id="sbVer">—</div>
+                </div>
+                <div class="live-indicator">
+                    <div class="live-dot"></div> LIVE
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ─── MAIN ─────────────────────────────────────────────────── -->
+    <div class="main">
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <a href="index.html">BOSS</a>
+                <span class="sep">/</span>
+                <span class="cur">System Dashboard</span>
+            </div>
+            <div class="topbar-right">
+                <span class="last-update" id="lastUpdate">—</span>
+                <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+            </div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+
+            <!-- STAT CARDS -->
+            <div class="stats-row">
+                <div class="stat-card c1 highlight">
+                    <div class="sc-label">BOSS Version</div>
+                    <div class="sc-value" id="statVer">—</div>
+                    <div class="sc-sub">Current application version</div>
+                    <span class="sc-badge badge-blue" id="statBump">—</span>
+                </div>
+                <div class="stat-card c2">
+                    <div class="sc-label">Services Online</div>
+                    <div class="sc-value">5 / 5</div>
+                    <div class="sc-sub">All microservices healthy</div>
+                    <span class="sc-badge badge-green">All Systems Go</span>
+                </div>
+                <div class="stat-card c3">
+                    <div class="sc-label">Previous Version</div>
+                    <div class="sc-value" id="statPrev">—</div>
+                    <div class="sc-sub">Before latest aggregation</div>
+                </div>
+                <div class="stat-card c4">
+                    <div class="sc-label">Last Aggregation</div>
+                    <div class="sc-value" id="statTime" style="font-size:1.1rem; padding-top:4px;">—</div>
+                    <div class="sc-sub" id="statTimeAbs">—</div>
+                </div>
+            </div>
+
+            <!-- TWO COL -->
+            <div class="two-col">
+
+                <!-- LEFT: services table -->
+                <div>
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div>
+                                <div class="panel-title">Microservice Versions</div>
+                                <div class="panel-sub">Latest release from uat branch of each service</div>
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Version</th>
+                                    <th>Tier</th>
+                                    <th>Status</th>
+                                    <th>Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody id="servicesTable">
+                                <tr>
+                                    <td colspan="5"
+                                        style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">
+                                        Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Decision Matrix -->
+                    <div class="panel" style="margin-top:1.25rem;">
+                        <div class="panel-header">
+                            <div>
+                                <div class="panel-title">Aggregation Decision Matrix</div>
+                                <div class="panel-sub">How Tier × PR Label determines the BOSS version bump</div>
+                            </div>
+                        </div>
+                        <div class="matrix-grid">
+                            <div class="mx-cell header">Service Tier</div>
+                            <div class="mx-cell header">PR Label</div>
+                            <div class="mx-cell header">BOSS Bump</div>
+                            <div class="mx-cell header">Example</div>
+
+                            <div class="mx-cell" style="color:var(--sub)">Tier 1 — Critical</div>
+                            <div class="mx-cell" style="color:var(--sub)">breaking-change</div>
+                            <div class="mx-cell mx-major">⬆ MAJOR</div>
+                            <div class="mx-cell" style="color:var(--muted)">2.1.0 → 3.0.0</div>
+
+                            <div class="mx-cell" style="color:var(--sub)">Tier 1 or 2</div>
+                            <div class="mx-cell" style="color:var(--sub)">feature / enhancement</div>
+                            <div class="mx-cell mx-minor">↑ MINOR</div>
+                            <div class="mx-cell" style="color:var(--muted)">2.1.0 → 2.2.0</div>
+
+                            <div class="mx-cell" style="color:var(--sub)">Tier 1 or 2</div>
+                            <div class="mx-cell" style="color:var(--sub)">bugfix</div>
+                            <div class="mx-cell mx-patch">· PATCH</div>
+                            <div class="mx-cell" style="color:var(--muted)">2.1.0 → 2.1.1</div>
+
+                            <div class="mx-cell" style="color:var(--sub)">Tier 3 — Supporting</div>
+                            <div class="mx-cell" style="color:var(--sub)">any label</div>
+                            <div class="mx-cell mx-patch">· PATCH</div>
+                            <div class="mx-cell" style="color:var(--muted)">2.1.0 → 2.1.1</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: info + timeline -->
+                <div style="display:flex;flex-direction:column;gap:1.25rem;">
+
+                    <!-- Current Release Info -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">Current Release Details</div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-key">BOSS Version</div>
+                            <div class="info-val mono" id="infoVer"
+                                style="font-size:1.4rem; font-weight:800; color:var(--accent);">—</div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-key">Bump Type</div>
+                            <div id="infoBump" class="bump-indicator bi-none">—</div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-key">Bump Reason</div>
+                            <div class="info-val" id="infoReason"
+                                style="font-size:0.78rem; color:var(--sub); line-height:1.5;">—</div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-key">Pipeline</div>
+                            <div class="info-val" style="font-size:0.78rem; color:var(--sub);">BOSS Aggregator · GitHub
+                                Actions</div>
+                        </div>
+                        <div class="info-section">
+                            <div class="info-key">Version JSON (Raw)</div>
+                            <a href="https://raw.githubusercontent.com/Boss-demo-2/boss-aggregator/main/version.json"
+                                target="_blank"
+                                style="font-size:0.72rem; color:var(--accent); word-break:break-all; text-decoration:none;">
+                                raw.githubusercontent.com/Boss-demo-2/.../version.json ↗
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Version History (live) -->
+                    <div class="panel" style="flex:1;">
+                        <div class="panel-header">
+                            <div class="panel-title">Version History</div>
+                            <div class="panel-sub" id="historyCount">—</div>
+                        </div>
+                        <div class="timeline" id="timeline">
+                            <div style="color:var(--muted);font-size:0.78rem;padding:1rem 0;">Loading...</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const RAW_URL = 'https://raw.githubusercontent.com/Boss-demo-2/boss-aggregator/main/version.json';
+        const API_BASE = 'https://api.github.com/repos/Boss-demo-2';
+
+        const SERVICES = [
+            { key: 'demo-auth-service', label: 'Auth / Identity Service', tier: 1, impact: 'MAJOR / MINOR' },
+            { key: 'demo-payment-service', label: 'Payment / Core API', tier: 1, impact: 'MAJOR / MINOR' },
+            { key: 'demo-order-service', label: 'Order / Inventory', tier: 2, impact: 'MINOR / PATCH' },
+            { key: 'demo-notification-service', label: 'Notification Service', tier: 2, impact: 'MINOR / PATCH' },
+            { key: 'demo-reporting-service', label: 'Reporting / Logs', tier: 3, impact: 'PATCH only' },
+        ];
+
+        function timeAgo(iso) {
+            const m = Math.floor((Date.now() - new Date(iso)) / 60000);
+            if (m < 1) return 'just now';
+            if (m < 60) return m + 'm ago';
+            const h = Math.floor(m / 60);
+            if (h < 24) return h + 'h ago';
+            return Math.floor(h / 24) + 'd ago';
+        }
+        function fmtAbs(iso) {
+            return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+        function bumpClass(b) {
+            return { major: 'bi-major', minor: 'bi-minor', patch: 'bi-patch', none: 'bi-none' }[b] || 'bi-none';
+        }
+        function bumpText(b) {
+            return { major: '⬆ MAJOR', minor: '↑ MINOR', patch: '· PATCH', none: '— NO CHANGE' }[b] || (b || 'none').toUpperCase();
+        }
+        function badgeClass(b) {
+            return { major: 'badge-red', minor: 'badge-blue', patch: 'badge-amber', none: 'badge-gray' }[b] || 'badge-gray';
+        }
+        function tierClass(t) { return ['', 'tier1', 'tier2', 'tier3'][t] || 'tier3'; }
+        function tierText(t) { return ['', 'T1 · Critical', 'T2 · Important', 'T3 · Supporting'][t] || '—'; }
+
+        async function loadData() {
+            try {
+                // Fetch version.json
+                const res = await fetch(RAW_URL + '?t=' + Date.now());
+                const d = await res.json();
+
+                // Stat cards
+                const verEl = document.getElementById('statVer');
+                verEl.textContent = 'v' + d.bossVersion;
+                document.getElementById('statBump').textContent = bumpText(d.bumpType);
+                document.getElementById('statBump').className = 'sc-badge ' + badgeClass(d.bumpType);
+                document.getElementById('statPrev').textContent = 'v' + d.previousVersion;
+                document.getElementById('statTime').textContent = timeAgo(d.lastUpdated);
+                document.getElementById('statTimeAbs').textContent = fmtAbs(d.lastUpdated);
+
+                // Sidebar
+                document.getElementById('sbVer').textContent = 'v' + d.bossVersion;
+
+                // Info panel
+                document.getElementById('infoVer').textContent = 'v' + d.bossVersion;
+                const bumpEl = document.getElementById('infoBump');
+                bumpEl.textContent = bumpText(d.bumpType);
+                bumpEl.className = 'bump-indicator ' + bumpClass(d.bumpType);
+                document.getElementById('infoReason').textContent = d.bumpReason || '—';
+
+                // Topbar
+                document.getElementById('lastUpdate').textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+                // Services table
+                const svc = d.services || {};
+                const tbody = document.getElementById('servicesTable');
+                tbody.innerHTML = SERVICES.map(s => {
+                    const ver = svc[s.key] || '—';
+                    return `
+          <tr>
+            <td style="font-weight:500">${s.label}</td>
+            <td><span class="ver-mono">${ver}</span></td>
+            <td><span class="tier-pill ${tierClass(s.tier)}">${tierText(s.tier)}</span></td>
+            <td><span class="status-ok">Operational</span></td>
+            <td style="font-size:0.72rem;color:var(--muted)">${s.impact}</td>
+          </tr>`;
+                }).join('');
+
+                // Fetch BOSS aggregator releases for history
+                try {
+                    const relRes = await fetch('https://api.github.com/repos/Boss-demo-2/boss-aggregator/releases?per_page=6', {
+                        headers: { 'Accept': 'application/vnd.github.v3+json' }
+                    });
+                    const rels = await relRes.json();
+                    document.getElementById('historyCount').textContent = rels.length + ' release(s)';
+                    const tl = document.getElementById('timeline');
+                    if (!rels.length) {
+                        tl.innerHTML = '<div style="color:var(--muted);font-size:0.78rem;">No releases yet — run the aggregator first.</div>';
+                    } else {
+                        tl.innerHTML = rels.map((r, i) => `
+            <div class="tl-item">
+              <div class="tl-dot ${i === 0 ? 'green' : 'blue'}"></div>
+              <span class="tl-ver">${r.tag_name}</span>
+              <span class="tl-desc">${r.name || r.tag_name}</span>
+              <span class="tl-time">${timeAgo(r.published_at)}</span>
+            </div>`).join('');
+                    }
+                } catch (e) {
+                    document.getElementById('timeline').innerHTML = '<div style="color:var(--muted);font-size:0.75rem;">Could not load releases.</div>';
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        loadData();
+        setInterval(loadData, 30000);
+    </script>
+</body>
+
+</html>
