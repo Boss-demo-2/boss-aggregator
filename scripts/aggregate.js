@@ -167,11 +167,11 @@ async function run() {
   if (highestBump === 'none') {
     console.log('  ℹ No changes detected — BOSS version unchanged');
   } else {
-    console.log(`  ✅ version.json updated successfully`);
+    console.log(`   version.json updated successfully`);
   }
 }
 
 run().catch(err => {
-  console.error('❌ Aggregation failed:', err);
+  console.error(' Aggregation failed:', err);
   process.exit(1);
 });
