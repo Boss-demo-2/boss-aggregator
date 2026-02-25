@@ -7,7 +7,7 @@
   <title>BOSS Application</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
     rel="stylesheet" />
   <style>
     *,
@@ -18,356 +18,223 @@
       padding: 0;
     }
 
-    :root {
-      --bg: #05070d;
-      --surface: #0d1117;
-      --border: #161b24;
-      --accent: #2563eb;
-      --accent-glow: #3b82f640;
-      --text: #f1f5f9;
-      --muted: #475569;
-      --label: #94a3b8;
-      --green: #22c55e;
-    }
-
-    html,
-    body {
-      height: 100%;
-    }
-
     body {
       font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: #ffffff;
+      color: #1e293b;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow-x: hidden;
     }
 
-    /* ── BACKGROUND GRID + GLOW ──────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-      background-size: 60px 60px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    body::after {
-      content: '';
-      position: fixed;
-      top: -200px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 900px;
-      height: 600px;
-      background: radial-gradient(ellipse, #2563eb0d 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── NAV ─────────────────────────────────────────────────── */
+    /* NAV */
     nav {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      height: 56px;
+      height: 52px;
+      border-bottom: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 2.5rem;
-      background: rgba(5, 7, 13, 0.6);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
     }
 
     .nav-brand {
-      font-size: 0.9rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--label);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .nav-brand .live-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--green);
-      border-radius: 50%;
-      box-shadow: 0 0 8px var(--green);
-      animation: blink 2s ease-in-out infinite;
-    }
-
-    @keyframes blink {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.3;
-      }
-    }
-
-    .version-chip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       font-weight: 600;
-      color: var(--text);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 14px;
-      transition: all 0.5s ease;
-      position: relative;
-      overflow: hidden;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 7px;
     }
 
-    .version-chip::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
-      transform: translateX(-100%);
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: #22c55e;
+      border-radius: 50%;
     }
 
-    .version-chip.flash::before {
-      animation: shimmer 0.8s ease;
+    .version-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #2563eb;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 4px 12px;
     }
 
-    @keyframes shimmer {
-      to {
-        transform: translateX(100%);
-      }
-    }
-
-    .version-chip .chip-label {
-      color: var(--muted);
-      font-size: 0.65rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    /* ── MAIN CONTENT ────────────────────────────────────────── */
+    /* MAIN */
     main {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      z-index: 1;
-      padding: 8rem 2rem 4rem;
+      padding: 4rem 2rem;
       text-align: center;
     }
 
-    .eyebrow {
+    .status-tag {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 0.72rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--muted);
-      border: 1px solid var(--border);
+      color: #64748b;
+      border: 1px solid #e2e8f0;
       border-radius: 999px;
-      padding: 5px 16px;
-      margin-bottom: 2.5rem;
+      padding: 4px 12px;
+      margin-bottom: 2rem;
     }
 
     h1 {
-      font-size: clamp(3rem, 8vw, 6.5rem);
-      font-weight: 900;
-      letter-spacing: -0.04em;
-      line-height: 1;
-      color: var(--text);
-      margin-bottom: 1.5rem;
-    }
-
-    h1 span {
-      background: linear-gradient(135deg, #fff 30%, #475569 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #0f172a;
+      margin-bottom: 0.75rem;
     }
 
     .tagline {
-      font-size: 1rem;
-      color: var(--muted);
-      font-weight: 400;
-      max-width: 420px;
+      font-size: 0.95rem;
+      color: #64748b;
+      max-width: 400px;
       line-height: 1.7;
-      margin-bottom: 3rem;
+      margin-bottom: 2.5rem;
     }
 
-    /* ── VERSION DISPLAY CENTRE ──────────────────────────────── */
-    .boss-version-display {
-      display: flex;
+    /* VERSION CARD */
+    .version-card {
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 1.2rem 2rem;
-      margin-bottom: 3rem;
-      transition: all 0.5s ease;
+      gap: 1.5rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem 2rem;
+      margin-bottom: 2.5rem;
     }
 
-    .boss-version-display.bumped {
-      border-color: #22c55e30;
-      box-shadow: 0 0 30px #22c55e0d;
+    .vc-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
-    .bvd-label {
-      font-size: 0.7rem;
+    .vc-label {
+      font-size: 0.65rem;
       text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-    }
-
-    .bvd-ver {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--text);
-      transition: color 0.4s;
-    }
-
-    .bvd-sep {
-      width: 1px;
-      height: 32px;
-      background: var(--border);
-    }
-
-    .bvd-bump {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 3px 10px;
-      border-radius: 999px;
-      font-weight: 700;
-    }
-
-    .bump-minor {
-      background: #2563eb18;
-      border: 1px solid #2563eb30;
-      color: #93c5fd;
-    }
-
-    .bump-major {
-      background: #ef444418;
-      border: 1px solid #ef444430;
-      color: #fca5a5;
-    }
-
-    .bump-patch {
-      background: #f59e0b18;
-      border: 1px solid #f59e0b30;
-      color: #fcd34d;
-    }
-
-    .bump-none {
-      background: #47556918;
-      border: 1px solid #47556930;
+      letter-spacing: 0.08em;
       color: #94a3b8;
     }
 
-    /* ── CTA BUTTONS ─────────────────────────────────────────── */
-    .cta-row {
+    .vc-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .vc-divider {
+      width: 1px;
+      height: 40px;
+      background: #e2e8f0;
+    }
+
+    .bump-tag {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .bump-minor {
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+
+    .bump-major {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .bump-patch {
+      background: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fde68a;
+    }
+
+    .bump-none {
+      background: #f8fafc;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* BUTTONS */
+    .btn-row {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
+      gap: 10px;
       justify-content: center;
     }
 
     .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--accent);
-      color: #fff;
       font-size: 0.85rem;
-      font-weight: 600;
-      padding: 10px 22px;
-      border-radius: 10px;
-      text-decoration: none;
+      font-weight: 500;
+      color: #fff;
+      background: #1d4ed8;
       border: none;
+      border-radius: 8px;
+      padding: 9px 20px;
+      text-decoration: none;
       cursor: pointer;
-      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      transition: background 0.15s;
     }
 
     .btn-primary:hover {
-      background: #1d4ed8;
-      transform: translateY(-1px);
-      box-shadow: 0 8px 24px #2563eb30;
+      background: #1e40af;
     }
 
     .btn-outline {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      color: var(--label);
       font-size: 0.85rem;
       font-weight: 500;
-      padding: 10px 22px;
-      border-radius: 10px;
+      color: #334155;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 9px 20px;
       text-decoration: none;
-      border: 1px solid var(--border);
       cursor: pointer;
-      transition: all 0.2s;
+      transition: border-color 0.15s;
     }
 
     .btn-outline:hover {
-      border-color: #2d3748;
-      color: var(--text);
+      border-color: #94a3b8;
     }
 
-    /* ── FOOTER STRIP ────────────────────────────────────────── */
+    /* FOOTER */
     footer {
-      z-index: 1;
-      border-top: 1px solid var(--border);
+      border-top: 1px solid #e2e8f0;
+      padding: 0.9rem 2rem;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 2rem;
-      padding: 1rem 2rem;
       font-size: 0.72rem;
-      color: var(--muted);
+      color: #94a3b8;
       flex-wrap: wrap;
     }
 
     footer a {
-      color: var(--muted);
+      color: #94a3b8;
       text-decoration: none;
-      transition: color 0.2s;
     }
 
     footer a:hover {
-      color: var(--text);
-    }
-
-    .status-dot {
-      display: inline-block;
-      width: 5px;
-      height: 5px;
-      background: var(--green);
-      border-radius: 50%;
-      margin-right: 5px;
-      box-shadow: 0 0 5px var(--green);
+      color: #334155;
     }
   </style>
 </head>
@@ -377,63 +244,52 @@
   <nav>
     <div class="nav-brand">
       <div class="live-dot"></div>
-      BOSS
+      BOSS Platform
     </div>
-
-    <div class="version-chip" id="navChip">
-      <span class="chip-label">Version</span>
-      <span id="navVer">—</span>
-    </div>
+    <div class="version-badge" id="navBadge">v —</div>
   </nav>
 
   <main>
-    <div class="eyebrow">
-      <span class="live-dot" style="margin-right:2px"></span>
-      Enterprise Platform · All Systems Operational
+    <div class="status-tag">
+      <div class="live-dot"></div>
+      All Systems Operational
     </div>
 
-    <h1><span>BOSS Application</span></h1>
+    <h1>BOSS Application</h1>
+    <p class="tagline">Unified microservice platform. Version controlled automatically across every UAT deployment
+      cycle.</p>
 
-    <p class="tagline">
-      Unified microservice platform. Version controlled across every deployment cycle — automatically.
-    </p>
-
-    <div class="boss-version-display" id="bvd">
-      <div>
-        <div class="bvd-label">BOSS Version</div>
-        <div class="bvd-ver" id="bvdVer">Loading...</div>
+    <div class="version-card">
+      <div class="vc-item">
+        <span class="vc-label">BOSS Version</span>
+        <span class="vc-value" id="bossVer">—</span>
       </div>
-      <div class="bvd-sep"></div>
-      <div>
-        <div class="bvd-label">Last Bump</div>
-        <div id="bvdBump" class="bvd-bump bump-none">—</div>
+      <div class="vc-divider"></div>
+      <div class="vc-item">
+        <span class="vc-label">Last Bump</span>
+        <span id="bumpTag" class="bump-tag bump-none">—</span>
       </div>
-      <div class="bvd-sep"></div>
-      <div>
-        <div class="bvd-label">Updated</div>
-        <div id="bvdTime" style="font-size:0.8rem; color:var(--label);">—</div>
+      <div class="vc-divider"></div>
+      <div class="vc-item">
+        <span class="vc-label">Updated</span>
+        <span id="updatedTime" style="font-size:0.82rem;color:#334155;font-weight:500;">—</span>
       </div>
     </div>
 
-    <div class="cta-row">
-      <a href="dashboard.html" class="btn-primary">
-        View System Dashboard →
-      </a>
-      <a href="https://github.com/Boss-demo-2/boss-aggregator" target="_blank" class="btn-outline">
-        GitHub ↗
-      </a>
+    <div class="btn-row">
+      <a href="dashboard.html" class="btn-primary">View Dashboard →</a>
+      <a href="https://github.com/Boss-demo-2" target="_blank" class="btn-outline">GitHub ↗</a>
     </div>
   </main>
 
   <footer>
-    <span><span class="status-dot"></span>Live · Auto-refreshes every 30s</span>
-    <span id="footerTime">—</span>
-    <a href="https://github.com/Boss-demo-2" target="_blank">Boss-demo-2 Org ↗</a>
+    <span>Auto-refreshes every 30 seconds</span>
+    <span id="fetchTime">—</span>
+    <a href="https://github.com/Boss-demo-2/boss-aggregator" target="_blank">boss-aggregator ↗</a>
   </footer>
 
   <script>
     const URL = 'https://raw.githubusercontent.com/Boss-demo-2/boss-aggregator/main/version.json';
-    let prev = null;
 
     function timeAgo(iso) {
       const m = Math.floor((Date.now() - new Date(iso)) / 60000);
@@ -443,42 +299,29 @@
       if (h < 24) return h + 'h ago';
       return Math.floor(h / 24) + 'd ago';
     }
-
     function bumpClass(b) {
-      return { major: 'bump-major', minor: 'bump-minor', patch: 'bump-patch', none: 'bump-none' }[b] || 'bump-none';
+      return ({ major: 'bump-major', minor: 'bump-minor', patch: 'bump-patch', none: 'bump-none' })[b] || 'bump-none';
     }
-    function bumpText(b) {
-      return { major: '↑↑ MAJOR', minor: '↑ MINOR', patch: '· PATCH', none: '— NONE' }[b] || b;
+    function bumpLabel(b) {
+      return ({ major: '↑ Major', minor: '↑ Minor', patch: '· Patch', none: 'No change' })[b] || '—';
     }
 
-    async function fetch_version() {
+    async function load() {
       try {
         const res = await fetch(URL + '?t=' + Date.now());
         const d = await res.json();
-        const isNew = prev && d.bossVersion !== prev;
-        prev = d.bossVersion;
-
-        document.getElementById('navVer').textContent = 'v' + d.bossVersion;
-        document.getElementById('bvdVer').textContent = 'v' + d.bossVersion;
-        document.getElementById('bvdTime').textContent = timeAgo(d.lastUpdated);
-
-        const bump = document.getElementById('bvdBump');
-        bump.textContent = bumpText(d.bumpType);
-        bump.className = 'bvd-bump ' + bumpClass(d.bumpType);
-
-        if (isNew) {
-          document.getElementById('bvd').classList.add('bumped');
-          const chip = document.getElementById('navChip');
-          chip.classList.add('flash');
-          setTimeout(() => chip.classList.remove('flash'), 900);
-        }
-
-        document.getElementById('footerTime').textContent = 'Last fetched: ' + new Date().toLocaleTimeString();
+        document.getElementById('navBadge').textContent = 'v' + d.bossVersion;
+        document.getElementById('bossVer').textContent = 'v' + d.bossVersion;
+        document.getElementById('updatedTime').textContent = timeAgo(d.lastUpdated);
+        const tag = document.getElementById('bumpTag');
+        tag.textContent = bumpLabel(d.bumpType);
+        tag.className = 'bump-tag ' + bumpClass(d.bumpType);
+        document.getElementById('fetchTime').textContent = 'Fetched at ' + new Date().toLocaleTimeString();
       } catch (e) { }
     }
 
-    fetch_version();
-    setInterval(fetch_version, 30000);
+    load();
+    setInterval(load, 30000);
   </script>
 </body>
 
