@@ -1,11 +1,11 @@
 {
-  "bossVersion": "1.0.0",
+  "bossVersion": "1.1.0",
   "previousVersion": "1.0.0",
-  "bumpType": "none",
-  "bumpReason": "No services changed in this cycle",
-  "lastUpdated": "2026-02-25T17:01:00.685Z",
+  "bumpType": "minor",
+  "bumpReason": "demo-auth-service (Tier 1) — label: \"feature\"",
+  "lastUpdated": "2026-02-25T17:04:54.889Z",
   "services": {
-    "demo-auth-service": "v1.1.0",
+    "demo-auth-service": "v1.2.0",
     "demo-payment-service": "v1.0.0",
     "demo-order-service": "v1.0.0",
     "demo-notification-service": "v1.0.0",
