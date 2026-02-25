@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOSS Application — Live System Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0a0d14;
+      --surface:   #111520;
+      --surface2:  #161b28;
+      --border:    #1e2535;
+      --accent:    #3b82f6;
+      --accent2:   #6366f1;
+      --green:     #10b981;
+      --amber:     #f59e0b;
+      --red:       #ef4444;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --label:     #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── TOP NAV ─────────────────────────────────────────────── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,13,20,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 60px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+    .nav-logo .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    /* ── SCROLLING VERSION TICKER ────────────────────────────── */
+    .ticker-wrap {
+      overflow: hidden;
+      white-space: nowrap;
+      flex: 1;
+      margin: 0 2rem;
+    }
+    .ticker {
+      display: inline-block;
+      animation: ticker-scroll 30s linear infinite;
+    }
+    .ticker span {
+      display: inline-block;
+      padding: 0 2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .ticker span strong { color: var(--accent); }
+    @keyframes ticker-scroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    .nav-version-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #1e40af22, #6366f122);
+      border: 1px solid #3b82f640;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      color: #93c5fd;
+      transition: all 0.6s ease;
+    }
+    .nav-version-badge.updated {
+      background: linear-gradient(135deg, #05966920, #10b98120);
+      border-color: #10b98150;
+      color: #6ee7b7;
+      box-shadow: 0 0 20px #10b98130;
+    }
+
+    /* ── HERO ─────────────────────────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 50% at 50% 0%, #3b82f615, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-block;
+      background: #3b82f615;
+      border: 1px solid #3b82f630;
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #93c5fd;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      color: var(--muted);
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      max-width: 500px;
+      margin-inline: auto;
+    }
+
+    /* ── BOSS VERSION CARD ───────────────────────────────────── */
+    .version-card {
+      max-width: 700px;
+      margin: 0 auto 3rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+    .version-card.bump-flash {
+      border-color: #10b98160;
+      box-shadow: 0 0 40px #10b98120, 0 0 80px #10b98108;
+    }
+    .version-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), transparent);
+    }
+    .vc-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .vc-version {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      transition: all 0.5s ease;
+    }
+    .vc-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .vc-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .vc-meta-item .key {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .vc-meta-item .val {
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text);
+      font-weight: 600;
+    }
+    .bump-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .bump-major { background: #ef444420; color: #fca5a5; border: 1px solid #ef444440; }
+    .bump-minor { background: #3b82f620; color: #93c5fd; border: 1px solid #3b82f640; }
+    .bump-patch { background: #f59e0b20; color: #fcd34d; border: 1px solid #f59e0b40; }
+    .bump-none  { background: #64748b20; color: #94a3b8; border: 1px solid #64748b40; }
+
+    /* ── SERVICES GRID ───────────────────────────────────────── */
+    .section-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      padding: 0 1.5rem;
+      max-width: 1000px;
+      margin-inline: auto;
+      display: block;
+    }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      max-width: 1000px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+    }
+    .service-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.2rem;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .service-card:hover { transform: translateY(-2px); border-color: #2d3748; }
+    .service-card .sc-name {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .service-card .sc-version {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .tier-badge {
+      display: inline-block;
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+    .tier-1 { background: #ef444415; color: #fca5a5; border: 1px solid #ef444432; }
+    .tier-2 { background: #f59e0b15; color: #fcd34d; border: 1px solid #f59e0b32; }
+    .tier-3 { background: #64748b15; color: #94a3b8; border: 1px solid #64748b32; }
+
+    /* ── ACTIVITY LOG ─────────────────────────────────────────── */
+    .activity-wrap {
+      max-width: 700px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+    }
+    .activity-log {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      animation: slideIn 0.4s ease;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .log-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .log-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .log-dot.blue  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+    .log-dot.gray  { background: var(--muted); }
+    .log-time { color: var(--muted); flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; }
+    .log-msg  { color: var(--label); flex: 1; }
+    .log-msg strong { color: var(--text); }
+
+    /* ── STATUS BAR ──────────────────────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.72rem;
+      color: var(--muted);
+      flex-wrap: wrap;
+    }
+    .status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 6px var(--green);
+      display: inline-block;
+      margin-right: 5px;
+      animation: pulse 2s infinite;
+    }
+    .refresh-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── LOADING ─────────────────────────────────────────────── */
+    .loading { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.85rem; }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<!-- ── NAVBAR ─────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-logo">
+    <div class="dot"></div>
+    BOSS Platform
+  </div>
+
+  <div class="ticker-wrap">
+    <div class="ticker" id="ticker">
+      <span>Microservices: <strong>5 Online</strong></span>
+      <span>Pipeline: <strong>GitHub Actions</strong></span>
+      <span>Versioning: <strong>Semantic Release</strong></span>
+      <span>Aggregation: <strong>Tier + Label Matrix</strong></span>
+      <span>Schedule: <strong>Tue &amp; Thu 10AM UTC</strong></span>
+      <span>Microservices: <strong>5 Online</strong></span>
+      <span>Pipeline: <strong>GitHub Actions</strong></span>
+      <span>Versioning: <strong>Semantic Release</strong></span>
+      <span>Aggregation: <strong>Tier + Label Matrix</strong></span>
+      <span>Schedule: <strong>Tue &amp; Thu 10AM UTC</strong></span>
+    </div>
+  </div>
+
+  <div class="nav-version-badge" id="navBadge">
+    BOSS v—
+  </div>
+</nav>
+
+<!-- ── HERO ───────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-tag">Live Versioning Dashboard</div>
+  <h1>BOSS Application</h1>
+  <p>Unified version powered by 5 microservices. Updates automatically every UAT deployment cycle.</p>
+</section>
+
+<!-- ── BOSS VERSION CARD ──────────────────────────────────────── -->
+<div class="version-card" id="versionCard">
+  <div class="vc-label">Current BOSS Application Version</div>
+  <div class="vc-version" id="bossVersion">—</div>
+  <div class="vc-meta" id="vcMeta">
+    <div class="loading"><div class="spinner"></div>Loading live version data...</div>
+  </div>
+</div>
+
+<!-- ── SERVICES ───────────────────────────────────────────────── -->
+<span class="section-title">Microservice Versions</span>
+<div class="services-grid" id="servicesGrid">
+  <div class="loading"><div class="spinner"></div></div>
+</div>
+
+<!-- ── ACTIVITY LOG ───────────────────────────────────────────── -->
+<div class="activity-wrap">
+  <span class="section-title" style="padding:0; margin-bottom:0.75rem; display:block;">Activity Log</span>
+  <div class="activity-log" id="activityLog">
+    <div class="loading"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<!-- ── STATUS BAR ─────────────────────────────────────────────── -->
+<div class="status-bar">
+  <span><span class="status-dot"></span> Live — Auto-refreshes every 30s</span>
+  <span id="lastFetch">Last fetched: —</span>
+  <button class="refresh-btn" onclick="fetchVersion()">↻ Refresh Now</button>
+  <a href="https://github.com/Boss-demo-2/boss-aggregator" target="_blank" style="color:var(--muted); text-decoration:none;">
+    View on GitHub ↗
+  </a>
+</div>
+
+<script>
+  const VERSION_URL = 'https://raw.githubusercontent.com/Boss-demo-2/boss-aggregator/main/version.json';
+
+  const TIER_MAP = {
+    'demo-auth-service':         { tier: 1, label: 'Auth / Identity',   short: 'Auth' },
+    'demo-payment-service':      { tier: 1, label: 'Payment / Core API', short: 'Payment' },
+    'demo-order-service':        { tier: 2, label: 'Order / Inventory',  short: 'Orders' },
+    'demo-notification-service': { tier: 2, label: 'Notifications',      short: 'Notify' },
+    'demo-reporting-service':    { tier: 3, label: 'Reporting / Logs',   short: 'Reports' },
+  };
+
+  let prevVersion = null;
+  const activityEntries = [];
+
+  function bumpClass(type) {
+    const map = { major:'bump-major', minor:'bump-minor', patch:'bump-patch', none:'bump-none' };
+    return map[type] || 'bump-none';
+  }
+  function bumpLabel(type) {
+    const map = { major:'⬆ MAJOR', minor:'↑ MINOR', patch:'· PATCH', none:'— NO CHANGE' };
+    return map[type] || type;
+  }
+  function timeAgo(iso) {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1)   return 'just now';
+    if (mins < 60)  return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)   return `${hrs}h ago`;
+    return `${Math.floor(hrs/24)}d ago`;
+  }
+  function formatTime(iso) {
+    return new Date(iso).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  function addLog(dotClass, msg) {
+    activityEntries.unshift({ dotClass, msg, time: new Date().toISOString() });
+    if (activityEntries.length > 8) activityEntries.pop();
+    renderLog();
+  }
+
+  function renderLog() {
+    const el = document.getElementById('activityLog');
+    if (!activityEntries.length) { el.innerHTML = '<div class="loading">No activity yet.</div>'; return; }
+    el.innerHTML = activityEntries.map(e => `
+      <div class="log-entry">
+        <div class="log-dot ${e.dotClass}"></div>
+        <span class="log-time">${formatTime(e.time)}</span>
+        <span class="log-msg">${e.msg}</span>
+      </div>
+    `).join('');
+  }
+
+  async function fetchVersion() {
+    try {
+      addLog('blue', 'Fetching live version from BOSS aggregator...');
+      const res = await fetch(VERSION_URL + '?t=' + Date.now());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderDashboard(data);
+      document.getElementById('lastFetch').textContent = 'Last fetched: ' + new Date().toLocaleTimeString();
+    } catch(e) {
+      addLog('gray', '<strong>Error:</strong> Could not reach version API — ' + e.message);
+    }
+  }
+
+  function renderDashboard(data) {
+    const isNew = prevVersion && data.bossVersion !== prevVersion;
+    prevVersion = data.bossVersion;
+
+    // ── Navbar badge
+    const badge = document.getElementById('navBadge');
+    badge.textContent = 'BOSS v' + data.bossVersion;
+    badge.className = 'nav-version-badge' + (isNew ? ' updated' : '');
+
+    // ── Big version number
+    document.getElementById('bossVersion').textContent = 'v' + data.bossVersion;
+
+    // ── Meta row
+    document.getElementById('vcMeta').innerHTML = `
+      <div class="vc-meta-item">
+        <span class="key">Bump Type</span>
+        <span class="val"><span class="bump-badge ${bumpClass(data.bumpType)}">${bumpLabel(data.bumpType)}</span></span>
+      </div>
+      <div class="vc-meta-item">
+        <span class="key">Previous Version</span>
+        <span class="val">v${data.previousVersion}</span>
+      </div>
+      <div class="vc-meta-item">
+        <span class="key">Last Updated</span>
+        <span class="val">${timeAgo(data.lastUpdated)}</span>
+      </div>
+      <div class="vc-meta-item" style="flex:1; min-width:200px;">
+        <span class="key">Bump Reason</span>
+        <span class="val" style="font-family:Inter; font-size:0.8rem; color:var(--label);">${data.bumpReason || '—'}</span>
+      </div>
+    `;
+
+    // ── Flash card if new version
+    const card = document.getElementById('versionCard');
+    if (isNew) {
+      card.classList.add('bump-flash');
+      setTimeout(() => card.classList.remove('bump-flash'), 3000);
+      addLog('green', `<strong>BOSS version bumped!</strong> ${data.previousVersion} → <strong>${data.bossVersion}</strong> (${data.bumpType})`);
+    } else {
+      addLog('gray', `Version data refreshed — BOSS v${data.bossVersion} (no change)`);
+    }
+
+    // ── Services grid
+    const services = data.services || {};
+    const grid = document.getElementById('servicesGrid');
+    if (!Object.keys(services).length) {
+      grid.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">No service data yet</div>';
+      return;
+    }
+    grid.innerHTML = Object.entries(services).map(([name, ver]) => {
+      const info = TIER_MAP[name] || { tier: 0, label: name, short: name };
+      const tierClass = 'tier-' + info.tier;
+      const tierText = info.tier === 1 ? 'Tier 1 — Critical' : info.tier === 2 ? 'Tier 2 — Important' : 'Tier 3 — Supporting';
+      return `
+        <div class="service-card">
+          <div class="sc-name">${info.label}</div>
+          <div class="sc-version">${ver}</div>
+          <div class="tier-badge ${tierClass}">${tierText}</div>
+        </div>`;
+    }).join('');
+
+    // ── Update ticker
+    const tickerContent = Object.entries(services).map(([name, ver]) => {
+      const info = TIER_MAP[name] || { short: name };
+      return `<span>${info.short}: <strong>${ver}</strong></span>`;
+    }).join('');
+    const ticker = document.getElementById('ticker');
+    ticker.innerHTML = tickerContent + tickerContent; // double for infinite scroll
+  }
+
+  // ── Initial fetch + auto-refresh every 30s
+  fetchVersion();
+  setInterval(fetchVersion, 30000);
+</script>
+</body>
+</html>
