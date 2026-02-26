@@ -1,7 +1,13 @@
 // aggregate.js
 // BOSS Aggregator — Main Script
-// Reads all 5 microservices, applies tier+label decision matrix,
-// decides BOSS version bump, updates version.json
+//
+// Combined Logic (3 layers):
+//   1. [priority:critical] commit keyword  → Emergency BOSS MAJOR, bypasses everything
+//   2. Version delta comparison            → Floor signal (what technically changed)
+//   3. All PR labels since lastAggregatedAt → Business signal (can raise above floor)
+//
+//   Final per-service bump = HIGHER of (version delta, label bump)
+//   Then apply Tier weighting → Take highest across all services → BOSS version
 
 const fs = require('fs');
 const https = require('https');
@@ -9,24 +15,55 @@ const https = require('https');
 const config = JSON.parse(fs.readFileSync('./config/services-config.json', 'utf8'));
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
-// ─── Decision Matrix ────────────────────────────────────────────────────────
-// Tier x Label → BOSS bump level
-// Priority: major > minor > patch > none
-function decideBump(tier, label) {
-  if (tier === 1 && label === 'breaking-change') return 'major';
-  if ((tier === 1 || tier === 2) && (label === 'feature' || label === 'enhancement')) return 'minor';
-  if ((tier === 1 || tier === 2) && label === 'bugfix') return 'patch';
-  if (tier === 3) return 'patch'; // Tier 3: always patch, regardless of label
+// ─── Priority Rank ────────────────────────────────────────────────────────────
+const priority = { major: 3, minor: 2, patch: 1, none: 0 };
+
+// ─── Tier Weighting ───────────────────────────────────────────────────────────
+// Caps the maximum BOSS contribution a service can make based on its tier.
+// Tier 1 (Critical)   — no cap, full bump passes through
+// Tier 2 (Important)  — MAJOR is capped to MINOR (can't push BOSS MAJOR alone)
+// Tier 3 (Supporting) — always PATCH, regardless of how big the change is
+function applyTierWeight(tier, bump) {
+  if (tier === 1) return bump;
+  if (tier === 2) return bump === 'major' ? 'minor' : bump;
+  if (tier === 3) return bump === 'none' ? 'none' : 'patch';
   return 'none';
 }
 
-// Priority rank: highest wins across all services in the cycle
-const priority = { major: 3, minor: 2, patch: 1, none: 0 };
+// ─── Signal 1: Version Delta Classifier (Floor) ───────────────────────────────
+// Compares the stored version (from last run) to the current latest release.
+// The version number is a perfect summary of all commits that happened since
+// the last aggregation — semantic-release already calculated this precisely.
+// This acts as a FLOOR: labels can raise above it but never below it.
+function classifyVersionDelta(oldTag, newTag) {
+  if (!oldTag || !newTag) return 'none';
+  const parse = tag => {
+    const m = tag.replace(/^v/, '').match(/^(\d+)\.(\d+)\.(\d+)/);
+    return m ? { major: +m[1], minor: +m[2], patch: +m[3] } : null;
+  };
+  const o = parse(oldTag);
+  const n = parse(newTag);
+  if (!o || !n) return 'none';
+  if (n.major > o.major) return 'major';
+  if (n.minor > o.minor) return 'minor';
+  if (n.patch > o.patch) return 'patch';
+  return 'none';
+}
 
-// ─── GitHub API Helper ───────────────────────────────────────────────────────
+// ─── Signal 2: Label → Bump Type (Business Classification) ───────────────────
+// Maps a PR label to the bump type it should cause, given the service's tier.
+function labelToBump(tier, label) {
+  if (tier === 1 && label === 'breaking-change') return 'major';
+  if ((tier === 1 || tier === 2) && (label === 'feature' || label === 'enhancement')) return 'minor';
+  if ((tier === 1 || tier === 2) && label === 'bugfix') return 'patch';
+  if (tier === 3 && label) return 'patch';
+  return 'none';
+}
+
+// ─── GitHub API Helper ────────────────────────────────────────────────────────
 function githubGet(path) {
   return new Promise((resolve, reject) => {
-    const options = {
+    const opts = {
       hostname: 'api.github.com',
       path,
       headers: {
@@ -35,169 +72,240 @@ function githubGet(path) {
         'Accept': 'application/vnd.github.v3+json'
       }
     };
-    https.get(options, res => {
+    https.get(opts, res => {
       let data = '';
-      res.on('data', chunk => data += chunk);
+      res.on('data', c => data += c);
       res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(new Error(`Failed to parse JSON from ${path}: ${data}`));
-        }
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error(`JSON parse failed for ${path}: ${data.slice(0, 200)}`)); }
       });
     }).on('error', reject);
   });
 }
 
-// ─── Fetch ALL closed PRs merged to UAT since a given timestamp ─────────────
-// Paginates through all pages until we either run out of PRs
-// or find PRs that are older than the lastAggregatedAt timestamp
+// ─── Priority Override Check ──────────────────────────────────────────────────
+// Scans the last 5 commits of a repo for [priority:critical] in the commit message.
+// If found → the entire aggregation is bypassed and BOSS is force-bumped to MAJOR.
+// Use case: emergency security patches, critical hotfixes, P0 incidents.
+async function checkPriorityOverride(repo) {
+  try {
+    const commits = await githubGet(`/repos/${repo}/commits?per_page=5`);
+    if (!Array.isArray(commits)) return false;
+    for (const c of commits) {
+      const msg = ((c.commit && c.commit.message) || '').toLowerCase();
+      if (msg.includes('[priority:critical]')) return true;
+    }
+  } catch (_) { /* skip silently */ }
+  return false;
+}
+
+// ─── PR Label Scanner (since last aggregation) ───────────────────────────────
+// Paginates through ALL closed PRs merged to UAT after lastAggregatedAt.
+// Collects every label from every qualifying PR.
+// This fixes the "multiple PRs in same repo" gap — we never miss a PR.
 async function getPRsSince(repo, sinceISO) {
   const sinceDate = new Date(sinceISO);
   const allLabels = [];
   let page = 1;
   let keepGoing = true;
 
-  console.log(`  Scanning all PRs merged to uat since ${sinceISO}`);
+  console.log(`  Scanning PRs merged to uat since ${sinceISO}`);
 
   while (keepGoing) {
-    const prs = await githubGet(
-      `/repos/${repo}/pulls?state=closed&base=uat&per_page=100&page=${page}&sort=updated&direction=desc`
-    );
-
-    if (!Array.isArray(prs) || prs.length === 0) {
-      // No more pages
+    let prs;
+    try {
+      prs = await githubGet(
+        `/repos/${repo}/pulls?state=closed&base=uat&per_page=100&page=${page}&sort=updated&direction=desc`
+      );
+    } catch (e) {
+      console.log(`  ⚠ PR fetch error on page ${page}: ${e.message}`);
       break;
     }
 
+    if (!Array.isArray(prs) || prs.length === 0) break;
+
     for (const pr of prs) {
-      // Only consider PRs that were actually merged (not just closed/rejected)
-      if (!pr.merged_at) continue;
-
-      const mergedAt = new Date(pr.merged_at);
-
-      // If this PR was merged BEFORE the last aggregation, stop scanning
-      if (mergedAt <= sinceDate) {
+      if (!pr.merged_at) continue;                     // Reject rejected/closed PRs
+      if (new Date(pr.merged_at) <= sinceDate) {       // Older than last run → stop
         keepGoing = false;
         break;
       }
-
-      // This PR was merged AFTER the last aggregation — collect its labels
       const labels = pr.labels.map(l => l.name);
-      console.log(`    PR #${pr.number}: "${pr.title}" | merged: ${pr.merged_at} | labels: [${labels.join(', ') || 'none'}]`);
+      const title = (pr.title || '').substring(0, 60);
+      console.log(`    PR #${pr.number}: "${title}" | merged: ${pr.merged_at} | labels: [${labels.join(', ') || 'none'}]`);
       allLabels.push(...labels);
     }
 
     page++;
-
-    // Safety: if the last item on this page was older than sinceDate, stop
-    if (!keepGoing) break;
-
-    // If this page had fewer than 100 results, we've hit the last page
-    if (prs.length < 100) break;
+    if (prs.length < 100) break;                       // Last page
   }
 
   return allLabels;
 }
 
-// ─── Main Aggregation Logic ──────────────────────────────────────────────────
+// ─── Main Aggregation Logic ───────────────────────────────────────────────────
 async function run() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  BOSS Aggregator — Starting Run');
   console.log(`  Timestamp: ${new Date().toISOString()}`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   const currentVersion = JSON.parse(fs.readFileSync('./version.json', 'utf8'));
-  console.log(`  Current BOSS Version: ${currentVersion.bossVersion}`);
-
-  // ─── Read the last aggregation timestamp ──────────────────────────────────
-  // This is the anchor point — we only scan PRs merged AFTER this timestamp
-  // If it doesn't exist yet (first run), fall back to lastUpdated
   const lastAggregatedAt = currentVersion.lastAggregatedAt || currentVersion.lastUpdated;
-  console.log(`  Scanning PRs since:   ${lastAggregatedAt}`);
-  console.log('');
+  const storedServices = currentVersion.services || {};
 
+  console.log(`  Current BOSS Version : ${currentVersion.bossVersion}`);
+  console.log(`  Scanning PRs since   : ${lastAggregatedAt}\n`);
+
+  // ═══════════════════════════════════════════════════════
+  // LAYER 1 — Priority Override Check
+  // If [priority:critical] is found in any service's recent
+  // commits, skip all normal logic and force BOSS MAJOR.
+  // ═══════════════════════════════════════════════════════
+  console.log('──── Layer 1: Priority Override Check ────');
+  let priorityOverride = false;
+  let overrideRepo = null;
+
+  for (const service of config.services) {
+    const found = await checkPriorityOverride(service.repo);
+    if (found) {
+      priorityOverride = true;
+      overrideRepo = service.name;
+      console.log(`  ⚡ [priority:critical] found in ${service.name} — forcing BOSS MAJOR\n`);
+      break;
+    }
+  }
+  if (!priorityOverride) console.log('  ✓ No priority override found\n');
+
+  if (priorityOverride) {
+    let [major, minor, patch] = currentVersion.bossVersion.split('.').map(Number);
+    major++; minor = 0; patch = 0;
+    const newVersion = `${major}.${minor}.${patch}`;
+    const runTs = new Date().toISOString();
+
+    // Still update service manifest with current versions
+    const manifest = {};
+    for (const s of config.services) {
+      try {
+        const rels = await githubGet(`/repos/${s.repo}/releases?per_page=1`);
+        manifest[s.name] = Array.isArray(rels) && rels[0] ? rels[0].tag_name : (storedServices[s.name] || 'unknown');
+      } catch (_) {
+        manifest[s.name] = storedServices[s.name] || 'unknown';
+      }
+    }
+
+    const output = {
+      bossVersion: newVersion,
+      previousVersion: currentVersion.bossVersion,
+      bumpType: 'major',
+      bumpReason: `⚡ Emergency override — [priority:critical] in ${overrideRepo}`,
+      lastUpdated: runTs,
+      lastAggregatedAt: runTs,
+      services: manifest
+    };
+    fs.writeFileSync('./version.json', JSON.stringify(output, null, 2));
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`  BOSS Version: ${currentVersion.bossVersion} → ${newVersion}`);
+    console.log('  Bump Type:    MAJOR (EMERGENCY OVERRIDE)');
+    console.log(`  Reason:       [priority:critical] in ${overrideRepo}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    return;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // LAYER 2 + 3 — Normal Aggregation Loop
+  // For each service:
+  //   Signal 1 (version delta) = Floor
+  //   Signal 2 (PR labels)     = Can raise above floor
+  //   serviceBump = HIGHER of both → apply Tier weighting
+  // ═══════════════════════════════════════════════════════
   let highestBump = 'none';
   let bumpReason = 'No services changed in this cycle';
   const manifest = {};
 
   for (const service of config.services) {
-    console.log(`──── Checking: ${service.name} (Tier ${service.tier}) ────`);
+    console.log(`──── Layer 2+3: ${service.name} (Tier ${service.tier}) ────`);
 
-    // Get latest release from this repo
+    // Fetch current latest release
     let releases;
     try {
       releases = await githubGet(`/repos/${service.repo}/releases?per_page=1`);
     } catch (e) {
-      console.log(`  ⚠ Could not fetch releases: ${e.message}`);
-      manifest[service.name] = 'fetch-error';
+      console.log(`  ⚠ Could not fetch releases: ${e.message}\n`);
+      manifest[service.name] = storedServices[service.name] || 'fetch-error';
       continue;
     }
 
     if (!Array.isArray(releases) || releases.length === 0) {
-      console.log(`  ℹ No releases found — skipping`);
+      console.log('  ℹ No releases found — skipping\n');
       manifest[service.name] = 'no-release';
       continue;
     }
 
-    const latestRelease = releases[0];
-    manifest[service.name] = latestRelease.tag_name;
-    console.log(`  Latest release: ${latestRelease.tag_name}`);
+    const currentTag = releases[0].tag_name;
+    const storedTag = storedServices[service.name] || null;
+    manifest[service.name] = currentTag;
 
-    // ─── SOLUTION 1: Scan ALL PRs merged to UAT since last aggregation ──────
-    // Instead of reading only the last PR, we paginate through all closed PRs
-    // merged to UAT after lastAggregatedAt and collect ALL their labels.
-    let allLabels;
+    console.log(`  Stored version  : ${storedTag || '(first run)'}`);
+    console.log(`  Current version : ${currentTag}`);
+
+    // ── Signal 1: Version Delta (Floor) ──────────────────────────────────
+    const versionBump = classifyVersionDelta(storedTag, currentTag);
+    console.log(`  Signal 1 (version delta)  : ${versionBump.toUpperCase()}`);
+
+    // ── Signal 2: All PR Labels Since Last Run ────────────────────────────
+    let labelBump = 'none';
+    let winningLabel = null;
     try {
-      allLabels = await getPRsSince(service.repo, lastAggregatedAt);
+      const allLabels = await getPRsSince(service.repo, lastAggregatedAt);
+      const uniqueLabels = [...new Set(allLabels)];
+
+      if (uniqueLabels.length > 0) {
+        console.log(`  All labels found: [${uniqueLabels.join(', ')}]`);
+        for (const label of uniqueLabels) {
+          const bump = labelToBump(service.tier, label);
+          if (priority[bump] > priority[labelBump]) {
+            labelBump = bump;
+            winningLabel = label;
+          }
+        }
+      } else {
+        console.log('  No PR labels found since last run');
+      }
     } catch (e) {
       console.log(`  ⚠ Could not fetch PRs: ${e.message}`);
+    }
+    console.log(`  Signal 2 (label)          : ${labelBump.toUpperCase()}${winningLabel ? ` (highest: "${winningLabel}")` : ''}`);
+
+    // ── Combine: Higher of Both Signals ──────────────────────────────────
+    const isVersionHigher = priority[versionBump] >= priority[labelBump];
+    const rawBump = isVersionHigher ? versionBump : labelBump;
+    const signalSource = isVersionHigher
+      ? `version delta (${storedTag} → ${currentTag})`
+      : `label "${winningLabel}"`;
+    console.log(`  Combined (higher wins)    : ${rawBump.toUpperCase()} — driven by ${signalSource}`);
+
+    // ── Apply Tier Weighting (Cap by Tier) ───────────────────────────────
+    const serviceBump = applyTierWeight(service.tier, rawBump);
+    console.log(`  After tier ${service.tier} weighting  : ${serviceBump.toUpperCase()}`);
+
+    if (serviceBump === 'none') {
+      console.log('  → No change — skipping\n');
       continue;
     }
 
-    if (allLabels.length === 0) {
-      console.log(`  ℹ No PRs merged to uat since last aggregation — skipping`);
-      console.log('');
-      continue;
-    }
-
-    console.log(`  All labels collected since last run: [${[...new Set(allLabels)].join(', ')}]`);
-
-    // Apply decision matrix across ALL collected labels — take highest
-    let serviceBump = 'none';
-    let winningLabel = null;
-
-    // Deduplicate labels before processing
-    const uniqueLabels = [...new Set(allLabels)];
-
-    for (const label of uniqueLabels) {
-      const bump = decideBump(service.tier, label);
-      if (priority[bump] > priority[serviceBump]) {
-        serviceBump = bump;
-        winningLabel = label;
-      }
-    }
-
-    // Handle Tier 3: always patch if any label found
-    if (service.tier === 3 && uniqueLabels.length > 0 && serviceBump === 'none') {
-      serviceBump = 'patch';
-      winningLabel = uniqueLabels[0];
-    }
-
-    console.log(`  Decision: ${serviceBump.toUpperCase()} ${winningLabel ? `(highest label: "${winningLabel}")` : ''}`);
-
-    // Update global highest bump
+    // Update global highest bump across all services
     if (priority[serviceBump] > priority[highestBump]) {
       highestBump = serviceBump;
-      bumpReason = `${service.name} (Tier ${service.tier}) — label: "${winningLabel}"`;
+      bumpReason = `${service.name} (Tier ${service.tier}) — ${signalSource}`;
     }
 
     console.log('');
   }
 
-  // ─── Calculate New BOSS Version ────────────────────────────────────────────
+  // ─── Calculate New BOSS Version ───────────────────────────────────────────
   let [major, minor, patch] = currentVersion.bossVersion.split('.').map(Number);
-
   if (highestBump === 'major') { major++; minor = 0; patch = 0; }
   else if (highestBump === 'minor') { minor++; patch = 0; }
   else if (highestBump === 'patch') { patch++; }
@@ -206,19 +314,17 @@ async function run() {
     ? currentVersion.bossVersion
     : `${major}.${minor}.${patch}`;
 
-  // ─── Write version.json ────────────────────────────────────────────────────
-  // NOTE: lastAggregatedAt is set to NOW so the NEXT run knows where to start from
-  const runTimestamp = new Date().toISOString();
+  // ─── Write version.json ───────────────────────────────────────────────────
+  const runTs = new Date().toISOString();
   const output = {
     bossVersion: newVersion,
     previousVersion: currentVersion.bossVersion,
     bumpType: highestBump,
     bumpReason,
-    lastUpdated: runTimestamp,
-    lastAggregatedAt: runTimestamp,   // ← The new anchor point for next run
+    lastUpdated: runTs,
+    lastAggregatedAt: runTs,       // ← anchor for next run
     services: manifest
   };
-
   fs.writeFileSync('./version.json', JSON.stringify(output, null, 2));
 
   // ─── Summary ──────────────────────────────────────────────────────────────
@@ -227,11 +333,10 @@ async function run() {
   console.log(`  Bump Type:    ${highestBump.toUpperCase()}`);
   console.log(`  Reason:       ${bumpReason}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
   if (highestBump === 'none') {
     console.log('  ℹ No changes detected — BOSS version unchanged');
   } else {
-    console.log(`   version.json updated successfully`);
+    console.log('   version.json updated successfully');
   }
 }
 
