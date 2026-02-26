@@ -49,6 +49,57 @@ function githubGet(path) {
   });
 }
 
+// ─── Fetch ALL closed PRs merged to UAT since a given timestamp ─────────────
+// Paginates through all pages until we either run out of PRs
+// or find PRs that are older than the lastAggregatedAt timestamp
+async function getPRsSince(repo, sinceISO) {
+  const sinceDate = new Date(sinceISO);
+  const allLabels = [];
+  let page = 1;
+  let keepGoing = true;
+
+  console.log(`  Scanning all PRs merged to uat since ${sinceISO}`);
+
+  while (keepGoing) {
+    const prs = await githubGet(
+      `/repos/${repo}/pulls?state=closed&base=uat&per_page=100&page=${page}&sort=updated&direction=desc`
+    );
+
+    if (!Array.isArray(prs) || prs.length === 0) {
+      // No more pages
+      break;
+    }
+
+    for (const pr of prs) {
+      // Only consider PRs that were actually merged (not just closed/rejected)
+      if (!pr.merged_at) continue;
+
+      const mergedAt = new Date(pr.merged_at);
+
+      // If this PR was merged BEFORE the last aggregation, stop scanning
+      if (mergedAt <= sinceDate) {
+        keepGoing = false;
+        break;
+      }
+
+      // This PR was merged AFTER the last aggregation — collect its labels
+      const labels = pr.labels.map(l => l.name);
+      console.log(`    PR #${pr.number}: "${pr.title}" | merged: ${pr.merged_at} | labels: [${labels.join(', ') || 'none'}]`);
+      allLabels.push(...labels);
+    }
+
+    page++;
+
+    // Safety: if the last item on this page was older than sinceDate, stop
+    if (!keepGoing) break;
+
+    // If this page had fewer than 100 results, we've hit the last page
+    if (prs.length < 100) break;
+  }
+
+  return allLabels;
+}
+
 // ─── Main Aggregation Logic ──────────────────────────────────────────────────
 async function run() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -58,6 +109,12 @@ async function run() {
 
   const currentVersion = JSON.parse(fs.readFileSync('./version.json', 'utf8'));
   console.log(`  Current BOSS Version: ${currentVersion.bossVersion}`);
+
+  // ─── Read the last aggregation timestamp ──────────────────────────────────
+  // This is the anchor point — we only scan PRs merged AFTER this timestamp
+  // If it doesn't exist yet (first run), fall back to lastUpdated
+  const lastAggregatedAt = currentVersion.lastAggregatedAt || currentVersion.lastUpdated;
+  console.log(`  Scanning PRs since:   ${lastAggregatedAt}`);
   console.log('');
 
   let highestBump = 'none';
@@ -87,29 +144,33 @@ async function run() {
     manifest[service.name] = latestRelease.tag_name;
     console.log(`  Latest release: ${latestRelease.tag_name}`);
 
-    // Get latest closed PR merged to uat branch
-    let prs;
+    // ─── SOLUTION 1: Scan ALL PRs merged to UAT since last aggregation ──────
+    // Instead of reading only the last PR, we paginate through all closed PRs
+    // merged to UAT after lastAggregatedAt and collect ALL their labels.
+    let allLabels;
     try {
-      prs = await githubGet(`/repos/${service.repo}/pulls?state=closed&base=uat&per_page=1`);
+      allLabels = await getPRsSince(service.repo, lastAggregatedAt);
     } catch (e) {
       console.log(`  ⚠ Could not fetch PRs: ${e.message}`);
       continue;
     }
 
-    if (!Array.isArray(prs) || prs.length === 0) {
-      console.log(`  ℹ No closed PRs found targeting uat`);
+    if (allLabels.length === 0) {
+      console.log(`  ℹ No PRs merged to uat since last aggregation — skipping`);
+      console.log('');
       continue;
     }
 
-    const pr = prs[0];
-    const labels = pr.labels.map(l => l.name);
-    console.log(`  Latest PR #${pr.number}: "${pr.title}"`);
-    console.log(`  Labels: ${labels.length > 0 ? labels.join(', ') : '(none)'}`);
+    console.log(`  All labels collected since last run: [${[...new Set(allLabels)].join(', ')}]`);
 
-    // Apply decision matrix for each label — take highest
+    // Apply decision matrix across ALL collected labels — take highest
     let serviceBump = 'none';
     let winningLabel = null;
-    for (const label of labels) {
+
+    // Deduplicate labels before processing
+    const uniqueLabels = [...new Set(allLabels)];
+
+    for (const label of uniqueLabels) {
       const bump = decideBump(service.tier, label);
       if (priority[bump] > priority[serviceBump]) {
         serviceBump = bump;
@@ -117,13 +178,13 @@ async function run() {
       }
     }
 
-    // Handle Tier 3: always patch
-    if (service.tier === 3 && labels.length > 0 && serviceBump === 'none') {
+    // Handle Tier 3: always patch if any label found
+    if (service.tier === 3 && uniqueLabels.length > 0 && serviceBump === 'none') {
       serviceBump = 'patch';
-      winningLabel = labels[0];
+      winningLabel = uniqueLabels[0];
     }
 
-    console.log(`  Decision: ${serviceBump.toUpperCase()} ${winningLabel ? `(label: "${winningLabel}")` : ''}`);
+    console.log(`  Decision: ${serviceBump.toUpperCase()} ${winningLabel ? `(highest label: "${winningLabel}")` : ''}`);
 
     // Update global highest bump
     if (priority[serviceBump] > priority[highestBump]) {
@@ -146,12 +207,15 @@ async function run() {
     : `${major}.${minor}.${patch}`;
 
   // ─── Write version.json ────────────────────────────────────────────────────
+  // NOTE: lastAggregatedAt is set to NOW so the NEXT run knows where to start from
+  const runTimestamp = new Date().toISOString();
   const output = {
     bossVersion: newVersion,
     previousVersion: currentVersion.bossVersion,
     bumpType: highestBump,
     bumpReason,
-    lastUpdated: new Date().toISOString(),
+    lastUpdated: runTimestamp,
+    lastAggregatedAt: runTimestamp,   // ← The new anchor point for next run
     services: manifest
   };
 
