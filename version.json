@@ -1,15 +1,15 @@
 {
-  "bossVersion": "1.5.0",
-  "previousVersion": "1.4.0",
+  "bossVersion": "1.6.0",
+  "previousVersion": "1.5.0",
   "bumpType": "minor",
-  "bumpReason": "demo-payment-service (Tier 1) — label \"feature\"",
-  "lastUpdated": "2026-03-01T09:42:05.059Z",
-  "lastAggregatedAt": "2026-03-01T09:42:05.059Z",
+  "bumpReason": "demo-auth-service (Tier 1) — version delta (v1.2.2 → v1.4.0)",
+  "lastUpdated": "2026-03-01T10:07:49.239Z",
+  "lastAggregatedAt": "2026-03-01T10:07:49.239Z",
   "services": {
-    "demo-auth-service": "v1.2.2",
-    "demo-payment-service": "v1.2.2",
-    "demo-order-service": "v1.1.2",
-    "demo-notification-service": "v1.0.2",
-    "demo-reporting-service": "v1.0.2"
+    "demo-auth-service": "v1.4.0",
+    "demo-payment-service": "v1.4.0",
+    "demo-order-service": "v1.3.0",
+    "demo-notification-service": "v1.2.0",
+    "demo-reporting-service": "v2.0.0"
   }
 }
