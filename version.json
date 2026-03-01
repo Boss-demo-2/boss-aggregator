@@ -1,15 +1,15 @@
 {
-  "bossVersion": "1.6.0",
-  "previousVersion": "1.5.0",
-  "bumpType": "minor",
-  "bumpReason": "demo-auth-service (Tier 1) — version delta (v1.2.2 → v1.4.0)",
-  "lastUpdated": "2026-03-01T10:07:49.239Z",
-  "lastAggregatedAt": "2026-03-01T10:07:49.239Z",
+  "bossVersion": "1.6.1",
+  "previousVersion": "1.6.0",
+  "bumpType": "patch",
+  "bumpReason": "demo-reporting-service (Tier 3) — version delta (v2.0.0 → v3.0.1)",
+  "lastUpdated": "2026-03-01T10:42:40.338Z",
+  "lastAggregatedAt": "2026-03-01T10:42:40.338Z",
   "services": {
     "demo-auth-service": "v1.4.0",
     "demo-payment-service": "v1.4.0",
     "demo-order-service": "v1.3.0",
     "demo-notification-service": "v1.2.0",
-    "demo-reporting-service": "v2.0.0"
+    "demo-reporting-service": "v3.0.1"
   }
 }
