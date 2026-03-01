@@ -2,7 +2,7 @@ name: BOSS Aggregator
 
 on:
   schedule:
-    - cron: "0 10 * * 2,4"
+    - cron: "30 4 * * 2,4"
   workflow_dispatch:
 
 jobs:
