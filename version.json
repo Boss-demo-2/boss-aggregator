@@ -3,8 +3,8 @@
   "previousVersion": "1.7.0",
   "bumpType": "none",
   "bumpReason": "No services changed in this cycle",
-  "lastUpdated": "2026-08-20T05:02:03.036Z",
-  "lastAggregatedAt": "2026-08-20T05:02:03.036Z",
+  "lastUpdated": "2026-08-25T05:02:03.916Z",
+  "lastAggregatedAt": "2026-08-25T05:02:03.916Z",
   "services": {
     "demo-auth-service": "v1.4.0",
     "demo-payment-service": "v1.5.0",
